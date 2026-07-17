@@ -1,0 +1,2492 @@
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  ETCHMO.HUB v2.0 - Purple Theme (BF90E2) + FakeUser Tab
+--  Refactored & Fixed
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local success, err = pcall(function()
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  SERVICES & VARIABLES
+-- ═══════════════════════════════════════════════════════════════════════════════
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local StarterGui = game:GetService("StarterGui")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local CoreGui = game:GetService("CoreGui")
+local TextService = game:GetService("TextService")
+
+local LocalPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
+local Mouse = LocalPlayer:GetMouse()
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  EXECUTOR DETECTION
+-- ═══════════════════════════════════════════════════════════════════════════════
+local Executor = {
+    HasHookMetaMethod = false,
+    HasDrawing = false,
+    HasSetClipboard = false,
+    HasGetRawMetatable = false,
+    HasNewCClosure = false,
+    HasSetReadonly = false,
+    HasGetNamecallMethod = false,
+    Name = "Unknown"
+}
+
+pcall(function()
+    Executor.HasGetRawMetatable = type(getrawmetatable) == "function"
+    Executor.HasNewCClosure = type(newcclosure) == "function"
+    Executor.HasSetReadonly = type(setreadonly) == "function"
+    Executor.HasGetNamecallMethod = type(getnamecallmethod) == "function"
+    Executor.HasHookMetaMethod = type(hookmetamethod) == "function"
+    Executor.HasSetClipboard = type(setclipboard) == "function"
+    local s = pcall(function() local d = Drawing.new("Circle") d:Remove() end)
+    Executor.HasDrawing = s
+end)
+
+pcall(function()
+    if syn then Executor.Name = "Synapse X" end
+    if KRNL_LOADED then Executor.Name = "KRNL" end
+    if fluxus then Executor.Name = "Fluxus" end
+    if Delta then Executor.Name = "Delta" end
+    if Codex then Executor.Name = "Codex" end
+    if getexecutorname then Executor.Name = getexecutorname() end
+    if identifyexecutor then Executor.Name = identifyexecutor() end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  SAFE WRAPPER FUNCTIONS
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function SafeCall(func, ...)
+    if type(func) ~= "function" then return nil end
+    local s, r = pcall(func, ...)
+    if s then return r end
+    return nil
+end
+
+local function SafeFindFirstChild(parent, name)
+    if not parent or typeof(parent) ~= "Instance" then return nil end
+    local s, r = pcall(function() return parent:FindFirstChild(name) end)
+    if s and r then return r end
+    return nil
+end
+
+local function SafeFindFirstChildOfClass(parent, className)
+    if not parent or typeof(parent) ~= "Instance" then return nil end
+    local s, r = pcall(function() return parent:FindFirstChildOfClass(className) end)
+    if s and r then return r end
+    return nil
+end
+
+local function SafeGetChildren(parent)
+    if not parent or typeof(parent) ~= "Instance" then return {} end
+    local s, r = pcall(function() return parent:GetChildren() end)
+    if s and r then return r end
+    return {}
+end
+
+local function SafeGetDescendants(parent)
+    if not parent or typeof(parent) ~= "Instance" then return {} end
+    local s, r = pcall(function() return parent:GetDescendants() end)
+    if s and r then return r end
+    return {}
+end
+
+local function SafeDisconnect(conn)
+    if conn and typeof(conn) == "RBXScriptConnection" then
+        pcall(function() conn:Disconnect() end)
+    end
+end
+
+local function SafeDestroy(obj)
+    if obj and typeof(obj) == "Instance" then
+        pcall(function() obj:Destroy() end)
+    end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  UTILITY FUNCTIONS
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function Round(num, decimals)
+    decimals = decimals or 0
+    local mult = 10 ^ decimals
+    return math.floor(num * mult + 0.5) / mult
+end
+
+local function FormatNumber(num)
+    return tostring(Round(num, 3))
+end
+
+local function CreateInstance(className, properties)
+    local s, obj = pcall(function()
+        return Instance.new(className)
+    end)
+    if not s or not obj then return nil end
+    for prop, value in pairs(properties or {}) do
+        if prop ~= "Parent" then
+            pcall(function() obj[prop] = value end)
+        end
+    end
+    if properties and properties.Parent then
+        pcall(function() obj.Parent = properties.Parent end)
+    end
+    return obj
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  COLOR PALETTE (Purple Theme BF90E2)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local Colors = {
+    Accent = Color3.fromRGB(191, 144, 226),
+    AccentDark = Color3.fromRGB(160, 110, 200),
+    AccentLight = Color3.fromRGB(220, 190, 245),
+    MainBg = Color3.fromRGB(18, 16, 24),
+    SecondaryBg = Color3.fromRGB(28, 24, 36),
+    TertiaryBg = Color3.fromRGB(38, 32, 48),
+    HoverBg = Color3.fromRGB(45, 38, 58),
+    ToggleActive = Color3.fromRGB(191, 144, 226),
+    ToggleInactive = Color3.fromRGB(55, 48, 68),
+    SliderTrack = Color3.fromRGB(45, 40, 55),
+    InputBg = Color3.fromRGB(35, 30, 45),
+    ValueBg = Color3.fromRGB(45, 40, 55),
+    PrimaryText = Color3.fromRGB(230, 225, 240),
+    SecondaryText = Color3.fromRGB(160, 150, 175),
+    TabActive = Color3.fromRGB(191, 144, 226),
+    TabInactive = Color3.fromRGB(120, 110, 135),
+    White = Color3.fromRGB(255, 255, 255),
+    Black = Color3.fromRGB(0, 0, 0),
+    Red = Color3.fromRGB(255, 80, 80),
+    Green = Color3.fromRGB(100, 255, 100),
+    Yellow = Color3.fromRGB(255, 220, 100),
+    Border = Color3.fromRGB(60, 50, 75),
+    Shadow = Color3.fromRGB(10, 8, 15),
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  FONTS (Minecraft-style)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local Fonts = {
+    Title = Enum.Font.GothamBold,
+    Tabs = Enum.Font.GothamBold,
+    Labels = Enum.Font.Gotham,
+    Values = Enum.Font.Gotham,
+    Keybinds = Enum.Font.Gotham,
+    Status = Enum.Font.GothamBold,
+}
+
+pcall(function()
+    Fonts.Title = Enum.Font.PermanentMarker
+    Fonts.Tabs = Enum.Font.PermanentMarker
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  STATE TABLES (Fully Initialized)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local State = {
+    SilentAim = {
+        Enabled = false,
+        Distance = 1000,
+        Mode = "Client",
+        HitPart = "Head",
+        ClosestPointMode = "Disabled",
+        ClosestPointScale = 0.5,
+        PredictionX = 0.165,
+        PredictionY = 0.165,
+        PredictionZ = 0.165,
+        ClampYEnabled = false,
+        ClampYDynamic = false,
+        ClampYValue = 45,
+        TargetLineEnabled = false,
+        TargetLineRegularColor = Colors.White,
+        TargetLineInFOVColor = Colors.Accent,
+        FOVEnabled = false,
+        FOVVisible = false,
+        FOVScanRange = 250,
+        FOVIgnoreModes = "None",
+        FOVType = "Circle",
+        FOVCircleRadius = 250,
+        FOVBoxDimensions = 250,
+        FOVMode = "Center",
+        FOVModeVisible = false,
+        FOV2DX = 500,
+        FOV2DY = 500,
+        FOV3DX = 500,
+        FOV3DY = 500,
+        FOV3DZ = 500,
+        FOV3DPrediction = 0.165,
+    },
+    Aimbot = {
+        Enabled = false,
+        Distance = 1000,
+        Smoothness = 0.1,
+        EasingStyle = "Linear",
+        EasingDirection = "In",
+        HitPart = "Head",
+        ClosestPointMode = "Disabled",
+        ClosestPointScale = 0.5,
+        PredictionX = 0.165,
+        PredictionY = 0.165,
+        PredictionZ = 0.165,
+        ClampYEnabled = false,
+        ClampYDynamic = false,
+        ClampYValue = 45,
+    },
+    TriggerBot = {
+        Enabled = false,
+        Distance = 1000,
+        Cooldown = 0.1,
+        PredictionX = 0.165,
+        PredictionY = 0.165,
+        PredictionZ = 0.165,
+        ActivationMode = "Hold",
+        ActivationType = "Mouse",
+        FOVEnabled = false,
+        FOVVisible = false,
+        FOVScanRange = 250,
+        FOV2DX = 500,
+        FOV2DY = 500,
+        FOV2DPrediction = 0.165,
+    },
+    FOV = {
+        Enabled = false,
+        Visible = false,
+        ScanRange = 250,
+        IgnoreModes = "None",
+        Type = "Circle",
+        CircleRadius = 250,
+        BoxDimensions = 250,
+        Mode = "Center",
+        ModeVisible = false,
+        X2D = 500,
+        Y2D = 500,
+        X3D = 500,
+        Y3D = 500,
+        Z3D = 500,
+        Prediction3D = 0.165,
+    },
+    Hitbox = {
+        Enabled = false,
+        Size = 5,
+        TargetModeOnly = false,
+        Transparency = 0.5,
+        Visualize = false,
+    },
+    Rage = {
+        Enabled = false,
+        Mode = "Legit",
+        FullDamage = false,
+        WeaponDistances = {
+            ["Double-Barrel"] = 50,
+            ["Tactical Shotgun"] = 50,
+            ["Revolver"] = 50,
+            ["Silencer"] = 50,
+            ["Glock"] = 50,
+            ["AR"] = 50,
+            ["Silencer AR"] = 50,
+            ["AK47"] = 50,
+            ["LMG"] = 50,
+            ["Drum Gun"] = 50,
+            ["AUG"] = 50,
+            ["SMG"] = 50,
+            ["P90"] = 50,
+            ["Rifle"] = 50,
+            ["Shotgun"] = 50,
+            ["Drum Shotgun"] = 50,
+        },
+    },
+    PlayerMods = {
+        AntiFall = false,
+        SpeedEnabled = false,
+        SpeedDefault = 16,
+        SpeedLowHealth = 20,
+        SpeedReloading = 10,
+        JumpPowerEnabled = false,
+        JumpPowerValue = 50,
+        AntiJumpCooldown = false,
+        SpreadChangerEnabled = false,
+        DoubleTapEnabled = false,
+        DelayChangerEnabled = false,
+        SkinChangerEnabled = false,
+        SkinUnlockAll = false,
+        SkinHoodCustoms = false,
+        SkinDeeHood = false,
+    },
+    Misc = {
+        SpeedHack = false,
+        NoClip = false,
+        NoClipSpeed = 0,
+        Flight = false,
+        FlightSpeed = 0,
+        FlightMode = "Camera",
+        TeleportToPlayer = false,
+    },
+    ESP = {
+        Enabled = false,
+        Names = false,
+        NameColor = Colors.White,
+        TargetingColor = Colors.Accent,
+    },
+    Visual = {
+        ESPBox = false,
+        ESPType = "2D",
+        ESPFilled = false,
+        ESPDistance = false,
+        ESPName = false,
+        ESPHealth = false,
+        ESPSnapLine = false,
+        ESPBone = false,
+        LimitDistance = false,
+        LimitDistanceValue = 0,
+    },
+    Checks = {
+        Visible = false,
+        Knocked = false,
+        Grabbed = false,
+        Tool = false,
+        Forcefield = false,
+        MultiThread = false,
+        TargetMode = false,
+    },
+    Keybinds = {
+        AimBotTarget = Enum.KeyCode.E,
+        TriggerBot = Enum.KeyCode.T,
+        TriggerBotTarget = Enum.KeyCode.Y,
+        SilentAimTarget = Enum.KeyCode.Q,
+        InventorySorter = Enum.KeyCode.R,
+        WalkSpeed = Enum.KeyCode.LeftShift,
+    },
+    ShowHotkeys = {
+        Enabled = false,
+        EccoColor = Colors.Accent,
+    },
+    GameUtils = {
+        InventorySorterEnabled = false,
+        InventorySorterOrder = "Name",
+        ArmorAuraEnabled = false,
+        ArmorAuraDistance = 10,
+    },
+    Settings = {
+        UIKeybind = Enum.KeyCode.RightShift,
+        Theme = "Purple",
+    },
+    AntiDetection = {
+        Enabled = false,
+        AntiScreenshot = false,
+        AntiRecord = false,
+        SpoofName = false,
+        SpoofDisplayName = false,
+        FakeName = "Player",
+        FakeDisplayName = "Player",
+        HideFromPlayerList = false,
+        AntiKick = false,
+        AntiTeleport = false,
+        SpoofPosition = false,
+        PositionOffset = 0,
+    },
+    FakeUser = {
+        Enabled = false,
+        FakeUsername = "Player123",
+        FakeDisplayName = "Player",
+        SpoofInLeaderboard = false,
+        SpoofInChat = false,
+        SpoofInGame = false,
+        OriginalName = "",
+        OriginalDisplayName = "",
+    },
+}
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  ACTIVE FEATURES TRACKER
+-- ═══════════════════════════════════════════════════════════════════════════════
+local ActiveFeatures = {}
+
+local function UpdateFeatureStatus(name, enabled)
+    if enabled then
+        ActiveFeatures[name] = true
+    else
+        ActiveFeatures[name] = nil
+    end
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  SCREEN GUI CREATION
+-- ═══════════════════════════════════════════════════════════════════════════════
+local ScreenGui = CreateInstance("ScreenGui", {
+    Name = "EtchmoHubV2",
+    Parent = CoreGui,
+    ResetOnSpawn = false,
+    ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+})
+
+local Shadow = CreateInstance("ImageLabel", {
+    Name = "Shadow",
+    Parent = ScreenGui,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0.5, -280, 0.5, -210),
+    Size = UDim2.new(0, 560, 0, 420),
+    Image = "rbxassetid://7912134082",
+    ImageColor3 = Colors.Shadow,
+    ImageTransparency = 0.6,
+    ScaleType = Enum.ScaleType.Slice,
+    SliceCenter = Rect.new(10, 10, 118, 118),
+})
+
+local MainFrame = CreateInstance("Frame", {
+    Name = "MainFrame",
+    Parent = ScreenGui,
+    BackgroundColor3 = Colors.MainBg,
+    BorderSizePixel = 0,
+    Position = UDim2.new(0.5, -270, 0.5, -200),
+    Size = UDim2.new(0, 540, 0, 400),
+    ClipsDescendants = true,
+})
+CreateInstance("UICorner", {CornerRadius = UDim.new(0, 8), Parent = MainFrame})
+
+local BorderGlow = CreateInstance("UIStroke", {
+    Parent = MainFrame,
+    Color = Colors.Accent,
+    Thickness = 1,
+    Transparency = 0.3,
+})
+
+local Header = CreateInstance("Frame", {
+    Name = "Header",
+    Parent = MainFrame,
+    BackgroundColor3 = Colors.SecondaryBg,
+    BorderSizePixel = 0,
+    Size = UDim2.new(1, 0, 0, 36),
+})
+CreateInstance("UICorner", {CornerRadius = UDim.new(0, 8), Parent = Header})
+
+local HeaderBottomFix = CreateInstance("Frame", {
+    Parent = Header,
+    BackgroundColor3 = Colors.SecondaryBg,
+    BorderSizePixel = 0,
+    Position = UDim2.new(0, 0, 0.5, 0),
+    Size = UDim2.new(1, 0, 0.5, 0),
+})
+
+local TitleLabel = CreateInstance("TextLabel", {
+    Name = "Title",
+    Parent = Header,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0, 14, 0, 0),
+    Size = UDim2.new(0, 200, 1, 0),
+    Font = Fonts.Title,
+    Text = "ETCHMO.HUB",
+    TextColor3 = Colors.Accent,
+    TextSize = 18,
+    TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+local SubtitleLabel = CreateInstance("TextLabel", {
+    Name = "Subtitle",
+    Parent = Header,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0, 14, 0, 20),
+    Size = UDim2.new(0, 200, 0, 14),
+    Font = Fonts.Labels,
+    Text = "v2.0 | " .. Executor.Name,
+    TextColor3 = Colors.SecondaryText,
+    TextSize = 9,
+    TextXAlignment = Enum.TextXAlignment.Left,
+})
+
+local CloseBtn = CreateInstance("TextButton", {
+    Name = "CloseBtn",
+    Parent = Header,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(1, -32, 0, 6),
+    Size = UDim2.new(0, 24, 0, 24),
+    Font = Fonts.Tabs,
+    Text = "X",
+    TextColor3 = Colors.SecondaryText,
+    TextSize = 14,
+    AutoButtonColor = false,
+})
+CloseBtn.MouseEnter:Connect(function()
+    pcall(function() TweenService:Create(CloseBtn, TweenInfo.new(0.15), {TextColor3 = Colors.Red}):Play() end)
+end)
+CloseBtn.MouseLeave:Connect(function()
+    pcall(function() TweenService:Create(CloseBtn, TweenInfo.new(0.15), {TextColor3 = Colors.SecondaryText}):Play() end)
+end)
+CloseBtn.MouseButton1Click:Connect(function()
+    pcall(function() ScreenGui:Destroy() end)
+end)
+
+local MinBtn = CreateInstance("TextButton", {
+    Name = "MinBtn",
+    Parent = Header,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(1, -58, 0, 6),
+    Size = UDim2.new(0, 24, 0, 24),
+    Font = Fonts.Tabs,
+    Text = "-",
+    TextColor3 = Colors.SecondaryText,
+    TextSize = 16,
+    AutoButtonColor = false,
+})
+MinBtn.MouseEnter:Connect(function()
+    pcall(function() TweenService:Create(MinBtn, TweenInfo.new(0.15), {TextColor3 = Colors.Accent}):Play() end)
+end)
+MinBtn.MouseLeave:Connect(function()
+    pcall(function() TweenService:Create(MinBtn, TweenInfo.new(0.15), {TextColor3 = Colors.SecondaryText}):Play() end)
+end)
+
+local TabContainer = CreateInstance("Frame", {
+    Name = "TabContainer",
+    Parent = MainFrame,
+    BackgroundColor3 = Colors.TertiaryBg,
+    BorderSizePixel = 0,
+    Position = UDim2.new(0, 0, 0, 36),
+    Size = UDim2.new(1, 0, 0, 28),
+})
+
+local TabLayout = CreateInstance("UIListLayout", {
+    Parent = TabContainer,
+    FillDirection = Enum.FillDirection.Horizontal,
+    SortOrder = Enum.SortOrder.LayoutOrder,
+    Padding = UDim.new(0, 2),
+    HorizontalAlignment = Enum.HorizontalAlignment.Center,
+})
+
+local TabPadding = CreateInstance("UIPadding", {
+    Parent = TabContainer,
+    PaddingLeft = UDim.new(0, 8),
+    PaddingRight = UDim.new(0, 8),
+})
+
+local ContentFrame = CreateInstance("Frame", {
+    Name = "ContentFrame",
+    Parent = MainFrame,
+    BackgroundTransparency = 1,
+    Position = UDim2.new(0, 0, 0, 64),
+    Size = UDim2.new(1, 0, 1, -64),
+    ClipsDescendants = true,
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  UI COMPONENT BUILDERS
+-- ═══════════════════════════════════════════════════════════════════════════════
+
+local function CreateToggle(parent, text, default, callback, yPos)
+    if not parent then return nil end
+    local container = CreateInstance("Frame", {
+        Name = text .. "Toggle",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, yPos),
+        Size = UDim2.new(1, -24, 0, 28),
+    })
+    if not container then return nil end
+
+    local label = CreateInstance("TextLabel", {
+        Name = "Label",
+        Parent = container,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, -60, 1, 0),
+        Font = Fonts.Labels,
+        Text = text,
+        TextColor3 = Colors.PrimaryText,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    local toggleBg = CreateInstance("Frame", {
+        Name = "ToggleBg",
+        Parent = container,
+        BackgroundColor3 = Colors.ToggleInactive,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -44, 0.5, -8),
+        Size = UDim2.new(0, 36, 0, 16),
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(1, 0), Parent = toggleBg})
+
+    local toggleKnob = CreateInstance("Frame", {
+        Name = "Knob",
+        Parent = toggleBg,
+        BackgroundColor3 = Colors.White,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 2, 0.5, -6),
+        Size = UDim2.new(0, 12, 0, 12),
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(1, 0), Parent = toggleKnob})
+
+    local isOn = default or false
+    local function UpdateToggle(on)
+        isOn = on
+        pcall(function()
+            if on then
+                TweenService:Create(toggleBg, TweenInfo.new(0.2), {BackgroundColor3 = Colors.ToggleActive}):Play()
+                TweenService:Create(toggleKnob, TweenInfo.new(0.2), {Position = UDim2.new(0, 22, 0.5, -6)}):Play()
+            else
+                TweenService:Create(toggleBg, TweenInfo.new(0.2), {BackgroundColor3 = Colors.ToggleInactive}):Play()
+                TweenService:Create(toggleKnob, TweenInfo.new(0.2), {Position = UDim2.new(0, 2, 0.5, -6)}):Play()
+            end
+        end)
+        if callback then
+            pcall(function() callback(on) end)
+        end
+    end
+
+    local clickArea = CreateInstance("TextButton", {
+        Name = "ClickArea",
+        Parent = container,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = "",
+    })
+    if clickArea then
+        clickArea.MouseButton1Click:Connect(function()
+            UpdateToggle(not isOn)
+        end)
+    end
+
+    UpdateToggle(isOn)
+    return container, UpdateToggle
+end
+
+local function CreateSlider(parent, text, min, max, default, decimals, callback, yPos)
+    if not parent then return nil end
+    min = min or 0
+    max = max or 100
+    default = default or min
+    decimals = decimals or 0
+
+    local container = CreateInstance("Frame", {
+        Name = text .. "Slider",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, yPos),
+        Size = UDim2.new(1, -24, 0, 40),
+    })
+    if not container then return nil end
+
+    CreateInstance("TextLabel", {
+        Name = "Label",
+        Parent = container,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0.5, 0, 0, 18),
+        Font = Fonts.Labels,
+        Text = text,
+        TextColor3 = Colors.PrimaryText,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    local valueBox = CreateInstance("TextBox", {
+        Name = "Value",
+        Parent = container,
+        BackgroundColor3 = Colors.ValueBg,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -70, 0, 0),
+        Size = UDim2.new(0, 60, 0, 18),
+        Font = Fonts.Values,
+        Text = FormatNumber(default),
+        TextColor3 = Colors.Accent,
+        TextSize = 11,
+        TextXAlignment = Enum.TextXAlignment.Center,
+        ClearTextOnFocus = false,
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(0, 4), Parent = valueBox})
+
+    local track = CreateInstance("Frame", {
+        Name = "Track",
+        Parent = container,
+        BackgroundColor3 = Colors.SliderTrack,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0, 26),
+        Size = UDim2.new(1, 0, 0, 4),
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(1, 0), Parent = track})
+
+    local fill = CreateInstance("Frame", {
+        Name = "Fill",
+        Parent = track,
+        BackgroundColor3 = Colors.Accent,
+        BorderSizePixel = 0,
+        Size = UDim2.new((default - min) / math.max(max - min, 0.001), 0, 1, 0),
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(1, 0), Parent = fill})
+
+    local knob = CreateInstance("Frame", {
+        Name = "Knob",
+        Parent = track,
+        BackgroundColor3 = Colors.Accent,
+        BorderSizePixel = 0,
+        Position = UDim2.new((default - min) / math.max(max - min, 0.001), -6, 0.5, -6),
+        Size = UDim2.new(0, 12, 0, 12),
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(1, 0), Parent = knob})
+
+    local currentValue = default
+    local dragging = false
+
+    local function UpdateValue(newVal)
+        currentValue = math.clamp(newVal, min, max)
+        if decimals and decimals > 0 then
+            currentValue = Round(currentValue, decimals)
+        else
+            currentValue = math.floor(currentValue + 0.5)
+        end
+        if valueBox then
+            valueBox.Text = FormatNumber(currentValue)
+        end
+        local percent = (currentValue - min) / math.max(max - min, 0.001)
+        if fill then
+            fill.Size = UDim2.new(percent, 0, 1, 0)
+        end
+        if knob then
+            knob.Position = UDim2.new(percent, -6, 0.5, -6)
+        end
+        if callback then
+            pcall(function() callback(currentValue) end)
+        end
+    end
+
+    local function HandleInput(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+        end
+    end
+
+    if knob then
+        knob.InputBegan:Connect(HandleInput)
+    end
+    if track then
+        track.InputBegan:Connect(HandleInput)
+    end
+
+    local inputChangedConn = UserInputService.InputChanged:Connect(function(input)
+        if dragging and track and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+            local trackPos = track.AbsolutePosition.X
+            local trackSize = track.AbsoluteSize.X
+            if trackSize > 0 then
+                local percent = math.clamp((input.Position.X - trackPos) / trackSize, 0, 1)
+                UpdateValue(min + percent * (max - min))
+            end
+        end
+    end)
+
+    local inputEndedConn = UserInputService.InputEnded:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = false
+        end
+    end)
+
+    if valueBox then
+        valueBox.FocusLost:Connect(function()
+            local num = tonumber(valueBox.Text)
+            if num then
+                UpdateValue(num)
+            else
+                valueBox.Text = FormatNumber(currentValue)
+            end
+        end)
+    end
+
+    return container, UpdateValue
+end
+
+local function CreateDropdown(parent, text, options, default, callback, yPos)
+    if not parent or not options or #options == 0 then return nil end
+
+    local container = CreateInstance("Frame", {
+        Name = text .. "Dropdown",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, yPos),
+        Size = UDim2.new(1, -24, 0, 28),
+    })
+    if not container then return nil end
+
+    CreateInstance("TextLabel", {
+        Name = "Label",
+        Parent = container,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0.5, 0, 1, 0),
+        Font = Fonts.Labels,
+        Text = text,
+        TextColor3 = Colors.PrimaryText,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    local dropdownBtn = CreateInstance("TextButton", {
+        Name = "DropdownBtn",
+        Parent = container,
+        BackgroundColor3 = Colors.InputBg,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -120, 0.5, -10),
+        Size = UDim2.new(0, 110, 0, 20),
+        Font = Fonts.Labels,
+        Text = default or options[1],
+        TextColor3 = Colors.PrimaryText,
+        TextSize = 11,
+        AutoButtonColor = false,
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(0, 4), Parent = dropdownBtn})
+
+    local arrow = CreateInstance("ImageLabel", {
+        Name = "Arrow",
+        Parent = dropdownBtn,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(1, -16, 0.5, -4),
+        Size = UDim2.new(0, 8, 0, 8),
+        Image = "rbxassetid://7072706745",
+        ImageColor3 = Colors.SecondaryText,
+    })
+
+    local isOpen = false
+    local selected = default or options[1]
+
+    local dropdownList = CreateInstance("Frame", {
+        Name = "List",
+        Parent = ScreenGui,
+        BackgroundColor3 = Colors.SecondaryBg,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0, 110, 0, 0),
+        ClipsDescendants = true,
+        ZIndex = 100,
+        Visible = false,
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(0, 4), Parent = dropdownList})
+    CreateInstance("UIListLayout", {Parent = dropdownList, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 2)})
+
+    for i, opt in ipairs(options) do
+        local optBtn = CreateInstance("TextButton", {
+            Name = opt,
+            Parent = dropdownList,
+            BackgroundColor3 = Colors.SecondaryBg,
+            BorderSizePixel = 0,
+            Size = UDim2.new(1, 0, 0, 22),
+            Font = Fonts.Labels,
+            Text = opt,
+            TextColor3 = Colors.PrimaryText,
+            TextSize = 11,
+            AutoButtonColor = false,
+            ZIndex = 101,
+        })
+        optBtn.MouseEnter:Connect(function()
+            pcall(function()
+                TweenService:Create(optBtn, TweenInfo.new(0.1), {BackgroundColor3 = Colors.HoverBg}):Play()
+            end)
+        end)
+        optBtn.MouseLeave:Connect(function()
+            pcall(function()
+                TweenService:Create(optBtn, TweenInfo.new(0.1), {BackgroundColor3 = Colors.SecondaryBg}):Play()
+            end)
+        end)
+        optBtn.MouseButton1Click:Connect(function()
+            selected = opt
+            if dropdownBtn then
+                dropdownBtn.Text = opt
+            end
+            isOpen = false
+            if dropdownList then
+                dropdownList.Visible = false
+            end
+            if arrow then
+                pcall(function()
+                    TweenService:Create(arrow, TweenInfo.new(0.2), {Rotation = 0}):Play()
+                end)
+            end
+            if callback then
+                pcall(function() callback(opt) end)
+            end
+        end)
+    end
+
+    if dropdownBtn then
+        dropdownBtn.MouseButton1Click:Connect(function()
+            isOpen = not isOpen
+            if isOpen then
+                local absPos = dropdownBtn.AbsolutePosition
+                local absSize = dropdownBtn.AbsoluteSize
+                dropdownList.Position = UDim2.new(0, absPos.X, 0, absPos.Y + absSize.Y + 2)
+                dropdownList.Visible = true
+                local totalHeight = #options * 24
+                pcall(function()
+                    TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(0, 110, 0, math.min(totalHeight, 150))}):Play()
+                    TweenService:Create(arrow, TweenInfo.new(0.2), {Rotation = 180}):Play()
+                end)
+            else
+                pcall(function()
+                    TweenService:Create(dropdownList, TweenInfo.new(0.2), {Size = UDim2.new(0, 110, 0, 0)}):Play()
+                    TweenService:Create(arrow, TweenInfo.new(0.2), {Rotation = 0}):Play()
+                end)
+                task.delay(0.2, function()
+                    if dropdownList then
+                        dropdownList.Visible = false
+                    end
+                end)
+            end
+        end)
+    end
+
+    return container
+end
+
+local function CreateKeybind(parent, text, defaultKey, callback, yPos)
+    if not parent then return nil end
+
+    local container = CreateInstance("Frame", {
+        Name = text .. "Keybind",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, yPos),
+        Size = UDim2.new(1, -24, 0, 28),
+    })
+    if not container then return nil end
+
+    CreateInstance("TextLabel", {
+        Name = "Label",
+        Parent = container,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0.5, 0, 1, 0),
+        Font = Fonts.Labels,
+        Text = text,
+        TextColor3 = Colors.PrimaryText,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    local keyBtn = CreateInstance("TextButton", {
+        Name = "KeyBtn",
+        Parent = container,
+        BackgroundColor3 = Colors.InputBg,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -70, 0.5, -10),
+        Size = UDim2.new(0, 60, 0, 20),
+        Font = Fonts.Keybinds,
+        Text = defaultKey and defaultKey.Name or "N/A",
+        TextColor3 = Colors.SecondaryText,
+        TextSize = 11,
+        AutoButtonColor = false,
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(0, 4), Parent = keyBtn})
+
+    local listening = false
+    if keyBtn then
+        keyBtn.MouseButton1Click:Connect(function()
+            listening = true
+            keyBtn.Text = "..."
+            keyBtn.TextColor3 = Colors.Accent
+        end)
+    end
+
+    local keybindConn = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+        if listening and not gameProcessed then
+            if input.UserInputType == Enum.UserInputType.Keyboard then
+                listening = false
+                if keyBtn then
+                    keyBtn.Text = input.KeyCode.Name
+                    keyBtn.TextColor3 = Colors.SecondaryText
+                end
+                if callback then
+                    pcall(function() callback(input.KeyCode) end)
+                end
+            end
+        end
+    end)
+
+    return container
+end
+
+local function CreateColorPicker(parent, text, defaultColor, callback, yPos)
+    if not parent then return nil end
+
+    local container = CreateInstance("Frame", {
+        Name = text .. "Color",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, yPos),
+        Size = UDim2.new(1, -24, 0, 28),
+    })
+    if not container then return nil end
+
+    CreateInstance("TextLabel", {
+        Name = "Label",
+        Parent = container,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0.5, 0, 1, 0),
+        Font = Fonts.Labels,
+        Text = text,
+        TextColor3 = Colors.PrimaryText,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    local colorBtn = CreateInstance("TextButton", {
+        Name = "ColorBtn",
+        Parent = container,
+        BackgroundColor3 = defaultColor or Colors.White,
+        BorderSizePixel = 0,
+        Position = UDim2.new(1, -36, 0.5, -10),
+        Size = UDim2.new(0, 26, 0, 20),
+        Text = "",
+        AutoButtonColor = false,
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(0, 4), Parent = colorBtn})
+    CreateInstance("UIStroke", {Parent = colorBtn, Color = Colors.Border, Thickness = 1})
+
+    local colors = {Colors.Accent, Colors.White, Colors.Black, Color3.fromRGB(0, 255, 0), Color3.fromRGB(0, 0, 255), Color3.fromRGB(255, 255, 0), Color3.fromRGB(255, 0, 0), Color3.fromRGB(255, 128, 0)}
+    
+    if colorBtn then
+        colorBtn.MouseButton1Click:Connect(function()
+            for i, c in ipairs(colors) do
+                local match = false
+                pcall(function()
+                    if math.abs(c.R - colorBtn.BackgroundColor3.R) < 0.01 and
+                       math.abs(c.G - colorBtn.BackgroundColor3.G) < 0.01 and
+                       math.abs(c.B - colorBtn.BackgroundColor3.B) < 0.01 then
+                        match = true
+                    end
+                end)
+                if match then
+                    local nextColor = colors[(i % #colors) + 1]
+                    colorBtn.BackgroundColor3 = nextColor
+                    if callback then
+                        pcall(function() callback(nextColor) end)
+                    end
+                    break
+                end
+            end
+        end)
+    end
+
+    return container
+end
+
+local function CreateSectionHeader(parent, text, yPos)
+    if not parent then return nil end
+    return CreateInstance("TextLabel", {
+        Name = text .. "Header",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, yPos),
+        Size = UDim2.new(1, -24, 0, 22),
+        Font = Fonts.Tabs,
+        Text = text,
+        TextColor3 = Colors.Accent,
+        TextSize = 11,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+end
+
+local function CreateButton(parent, text, callback, yPos)
+    if not parent then return nil end
+    local btn = CreateInstance("TextButton", {
+        Name = text .. "Btn",
+        Parent = parent,
+        BackgroundColor3 = Colors.Accent,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 12, 0, yPos),
+        Size = UDim2.new(1, -24, 0, 28),
+        Font = Fonts.Labels,
+        Text = text,
+        TextColor3 = Colors.Black,
+        TextSize = 12,
+        AutoButtonColor = false,
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(0, 6), Parent = btn})
+    
+    btn.MouseEnter:Connect(function()
+        pcall(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Colors.AccentLight}):Play() end)
+    end)
+    btn.MouseLeave:Connect(function()
+        pcall(function() TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Colors.Accent}):Play() end)
+    end)
+    
+    if callback then
+        btn.MouseButton1Click:Connect(function()
+            pcall(callback)
+        end)
+    end
+    
+    return btn
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TEXT INPUT (NEW - For FakeUser)
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function CreateTextInput(parent, text, default, callback, yPos)
+    if not parent then return nil end
+    
+    local container = CreateInstance("Frame", {
+        Name = text .. "Input",
+        Parent = parent,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 12, 0, yPos),
+        Size = UDim2.new(1, -24, 0, 50),
+    })
+    if not container then return nil end
+
+    CreateInstance("TextLabel", {
+        Name = "Label",
+        Parent = container,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 0, 18),
+        Font = Fonts.Labels,
+        Text = text,
+        TextColor3 = Colors.PrimaryText,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+    })
+
+    local inputBox = CreateInstance("TextBox", {
+        Name = "Input",
+        Parent = container,
+        BackgroundColor3 = Colors.InputBg,
+        BorderSizePixel = 0,
+        Position = UDim2.new(0, 0, 0, 22),
+        Size = UDim2.new(1, 0, 0, 24),
+        Font = Fonts.Values,
+        Text = default or "",
+        TextColor3 = Colors.Accent,
+        TextSize = 12,
+        TextXAlignment = Enum.TextXAlignment.Left,
+        ClearTextOnFocus = false,
+        PlaceholderText = "Enter text...",
+        PlaceholderColor3 = Colors.SecondaryText,
+    })
+    CreateInstance("UICorner", {CornerRadius = UDim.new(0, 6), Parent = inputBox})
+    CreateInstance("UIPadding", {
+        Parent = inputBox,
+        PaddingLeft = UDim.new(0, 8),
+        PaddingRight = UDim.new(0, 8),
+    })
+
+    if inputBox then
+        inputBox.FocusLost:Connect(function()
+            if callback then
+                pcall(function() callback(inputBox.Text) end)
+            end
+        end)
+    end
+
+    return container, inputBox
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+local TabNames = {"Silent", "Aimbot", "Trigger", "FOV", "Hitbox", "Misc", "Visual", "Whitelist", "Teleport", "AntiDet", "FakeUser", "Settings"}
+local TabButtons = {}
+local TabContents = {}
+local CurrentTab = "Silent"
+
+local function CreateTabContent(name)
+    local content = CreateInstance("ScrollingFrame", {
+        Name = name .. "Content",
+        Parent = ContentFrame,
+        BackgroundTransparency = 1,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(1, 0, 1, 0),
+        ScrollBarThickness = 3,
+        ScrollBarImageColor3 = Colors.Accent,
+        CanvasSize = UDim2.new(0, 0, 0, 800),
+        Visible = false,
+    })
+    if content then
+        CreateInstance("UIListLayout", {Parent = content, SortOrder = Enum.SortOrder.LayoutOrder, Padding = UDim.new(0, 0)})
+    end
+    return content
+end
+
+for i, tabName in ipairs(TabNames) do
+    local btn = CreateInstance("TextButton", {
+        Name = tabName .. "Tab",
+        Parent = TabContainer,
+        BackgroundTransparency = 1,
+        Size = UDim2.new(0, 0, 0, 24),
+        AutomaticSize = Enum.AutomaticSize.X,
+        Font = Fonts.Tabs,
+        Text = tabName,
+        TextColor3 = Colors.TabInactive,
+        TextSize = 10,
+        AutoButtonColor = false,
+    })
+    
+    local indicator = nil
+    if btn then
+        indicator = CreateInstance("Frame", {
+            Name = "Indicator",
+            Parent = btn,
+            BackgroundColor3 = Colors.Accent,
+            BorderSizePixel = 0,
+            Position = UDim2.new(0, 0, 1, -2),
+            Size = UDim2.new(1, 0, 0, 2),
+            Visible = false,
+        })
+        TabButtons[tabName] = {Button = btn, Indicator = indicator}
+    end
+    
+    TabContents[tabName] = CreateTabContent(tabName)
+end
+
+local function SwitchTab(tabName)
+    for name, data in pairs(TabButtons) do
+        if name == tabName then
+            pcall(function()
+                TweenService:Create(data.Button, TweenInfo.new(0.2), {TextColor3 = Colors.TabActive}):Play()
+            end)
+            if data.Indicator then
+                data.Indicator.Visible = true
+            end
+            if TabContents[name] then
+                TabContents[name].Visible = true
+            end
+        else
+            pcall(function()
+                TweenService:Create(data.Button, TweenInfo.new(0.2), {TextColor3 = Colors.TabInactive}):Play()
+            end)
+            if data.Indicator then
+                data.Indicator.Visible = false
+            end
+            if TabContents[name] then
+                TabContents[name].Visible = false
+            end
+        end
+    end
+    CurrentTab = tabName
+end
+
+for name, data in pairs(TabButtons) do
+    if data.Button then
+        data.Button.MouseButton1Click:Connect(function()
+            SwitchTab(name)
+        end)
+    end
+end
+
+local function BuildTab(tabName, controls)
+    local content = TabContents[tabName]
+    if not content then return end
+    local y = 8
+    for _, control in ipairs(controls) do
+        local t = control.type
+        if t == "toggle" then
+            CreateToggle(content, control.text, control.default, control.callback, y)
+            y = y + 32
+        elseif t == "slider" then
+            CreateSlider(content, control.text, control.min, control.max, control.default, control.decimals, control.callback, y)
+            y = y + 44
+        elseif t == "dropdown" then
+            CreateDropdown(content, control.text, control.options, control.default, control.callback, y)
+            y = y + 32
+        elseif t == "keybind" then
+            CreateKeybind(content, control.text, control.default, control.callback, y)
+            y = y + 32
+        elseif t == "color" then
+            CreateColorPicker(content, control.text, control.default, control.callback, y)
+            y = y + 32
+        elseif t == "header" then
+            CreateSectionHeader(content, control.text, y)
+            y = y + 26
+        elseif t == "spacer" then
+            y = y + (control.size or 8)
+        elseif t == "button" then
+            CreateButton(content, control.text, control.callback, y)
+            y = y + 36
+        elseif t == "input" then
+            CreateTextInput(content, control.text, control.default, control.callback, y)
+            y = y + 56
+        end
+    end
+    content.CanvasSize = UDim2.new(0, 0, 0, y + 20)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 1: SILENT AIM
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Silent", {
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.SilentAim.Enabled=v; UpdateFeatureStatus("silent-aim",v) end},
+    {type="slider", text="Distance", min=0, max=1000, default=1000, decimals=0, callback=function(v) State.SilentAim.Distance=v end},
+    {type="dropdown", text="Mode", options={"Client","Redirection"}, default="Client", callback=function(v) State.SilentAim.Mode=v end},
+    {type="dropdown", text="Hit Part", options={"Head","HumanoidRootPart","UpperTorso","LowerTorso","LeftArm","RightArm","LeftLeg","RightLeg","Random"}, default="Head", callback=function(v) State.SilentAim.HitPart=v end},
+    {type="header", text="Closest Point"},
+    {type="dropdown", text="Mode", options={"Disabled","Static","Dynamic"}, default="Disabled", callback=function(v) State.SilentAim.ClosestPointMode=v end},
+    {type="slider", text="Scale", min=0, max=1, default=0.5, decimals=2, callback=function(v) State.SilentAim.ClosestPointScale=v end},
+    {type="header", text="Prediction"},
+    {type="slider", text="X", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.SilentAim.PredictionX=v end},
+    {type="slider", text="Y", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.SilentAim.PredictionY=v end},
+    {type="slider", text="Z", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.SilentAim.PredictionZ=v end},
+    {type="header", text="Clamp Y Axis"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.SilentAim.ClampYEnabled=v end},
+    {type="toggle", text="Dynamic", default=false, callback=function(v) State.SilentAim.ClampYDynamic=v end},
+    {type="slider", text="Value", min=0, max=90, default=45, decimals=0, callback=function(v) State.SilentAim.ClampYValue=v end},
+    {type="header", text="Target Line"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.SilentAim.TargetLineEnabled=v end},
+    {type="color", text="Regular Color", default=Colors.White, callback=function(v) State.SilentAim.TargetLineRegularColor=v end},
+    {type="color", text="In FOV Color", default=Colors.Accent, callback=function(v) State.SilentAim.TargetLineInFOVColor=v end},
+    {type="header", text="FOV"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.SilentAim.FOVEnabled=v end},
+    {type="toggle", text="Visible", default=false, callback=function(v) State.SilentAim.FOVVisible=v end},
+    {type="slider", text="Scan Range", min=0, max=500, default=250, decimals=0, callback=function(v) State.SilentAim.FOVScanRange=v end},
+    {type="dropdown", text="Ignore Modes", options={"None","Knocked","Grabbed","Both"}, default="None", callback=function(v) State.SilentAim.FOVIgnoreModes=v end},
+    {type="dropdown", text="Type", options={"Circle","Box","3D"}, default="Circle", callback=function(v) State.SilentAim.FOVType=v end},
+    {type="slider", text="Circle Radius", min=0, max=500, default=250, decimals=0, callback=function(v) State.SilentAim.FOVCircleRadius=v end},
+    {type="slider", text="Box Dimensions", min=0, max=500, default=250, decimals=0, callback=function(v) State.SilentAim.FOVBoxDimensions=v end},
+    {type="dropdown", text="Mode", options={"Center","Mouse"}, default="Center", callback=function(v) State.SilentAim.FOVMode=v end},
+    {type="toggle", text="Mode Visible", default=false, callback=function(v) State.SilentAim.FOVModeVisible=v end},
+    {type="slider", text="2D X", min=0, max=1000, default=500, decimals=0, callback=function(v) State.SilentAim.FOV2DX=v end},
+    {type="slider", text="2D Y", min=0, max=1000, default=500, decimals=0, callback=function(v) State.SilentAim.FOV2DY=v end},
+    {type="slider", text="3D X", min=0, max=1000, default=500, decimals=0, callback=function(v) State.SilentAim.FOV3DX=v end},
+    {type="slider", text="3D Y", min=0, max=1000, default=500, decimals=0, callback=function(v) State.SilentAim.FOV3DY=v end},
+    {type="slider", text="3D Z", min=0, max=1000, default=500, decimals=0, callback=function(v) State.SilentAim.FOV3DZ=v end},
+    {type="slider", text="3D Prediction", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.SilentAim.FOV3DPrediction=v end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 2: AIMBOT
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Aimbot", {
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.Aimbot.Enabled=v; UpdateFeatureStatus("aimbot",v) end},
+    {type="slider", text="Distance", min=0, max=1000, default=1000, decimals=0, callback=function(v) State.Aimbot.Distance=v end},
+    {type="slider", text="Smoothness", min=0.001, max=1, default=0.1, decimals=3, callback=function(v) State.Aimbot.Smoothness=v end},
+    {type="header", text="Easing"},
+    {type="dropdown", text="Style", options={"Linear","Quad","Cubic","Quart","Quint","Sine","Expo","Circ","Elastic","Back","Bounce"}, default="Linear", callback=function(v) State.Aimbot.EasingStyle=v end},
+    {type="dropdown", text="Direction", options={"In","Out","InOut"}, default="In", callback=function(v) State.Aimbot.EasingDirection=v end},
+    {type="dropdown", text="Hit Part", options={"Head","HumanoidRootPart","UpperTorso","LowerTorso","LeftArm","RightArm","LeftLeg","RightLeg","Random"}, default="Head", callback=function(v) State.Aimbot.HitPart=v end},
+    {type="header", text="Closest Point"},
+    {type="dropdown", text="Mode", options={"Disabled","Static","Dynamic"}, default="Disabled", callback=function(v) State.Aimbot.ClosestPointMode=v end},
+    {type="slider", text="Scale", min=0, max=1, default=0.5, decimals=2, callback=function(v) State.Aimbot.ClosestPointScale=v end},
+    {type="header", text="Prediction"},
+    {type="slider", text="X", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.Aimbot.PredictionX=v end},
+    {type="slider", text="Y", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.Aimbot.PredictionY=v end},
+    {type="slider", text="Z", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.Aimbot.PredictionZ=v end},
+    {type="header", text="Clamp Y Axis"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.Aimbot.ClampYEnabled=v end},
+    {type="toggle", text="Dynamic", default=false, callback=function(v) State.Aimbot.ClampYDynamic=v end},
+    {type="slider", text="Value", min=0, max=90, default=45, decimals=0, callback=function(v) State.Aimbot.ClampYValue=v end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 3: TRIGGER BOT
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Trigger", {
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.TriggerBot.Enabled=v; UpdateFeatureStatus("trigger-bot",v) end},
+    {type="slider", text="Distance", min=0, max=1000, default=1000, decimals=0, callback=function(v) State.TriggerBot.Distance=v end},
+    {type="slider", text="Cooldown", min=0.01, max=1, default=0.1, decimals=2, callback=function(v) State.TriggerBot.Cooldown=v end},
+    {type="header", text="Prediction"},
+    {type="slider", text="X", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.TriggerBot.PredictionX=v end},
+    {type="slider", text="Y", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.TriggerBot.PredictionY=v end},
+    {type="slider", text="Z", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.TriggerBot.PredictionZ=v end},
+    {type="header", text="Activation"},
+    {type="dropdown", text="Mode", options={"Hold","Toggle","Always"}, default="Hold", callback=function(v) State.TriggerBot.ActivationMode=v end},
+    {type="dropdown", text="Type", options={"Mouse","Keybind","Auto"}, default="Mouse", callback=function(v) State.TriggerBot.ActivationType=v end},
+    {type="header", text="FOV"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.TriggerBot.FOVEnabled=v end},
+    {type="toggle", text="Visible", default=false, callback=function(v) State.TriggerBot.FOVVisible=v end},
+    {type="slider", text="Scan Range", min=0, max=500, default=250, decimals=0, callback=function(v) State.TriggerBot.FOVScanRange=v end},
+    {type="slider", text="2D X", min=0, max=1000, default=500, decimals=0, callback=function(v) State.TriggerBot.FOV2DX=v end},
+    {type="slider", text="2D Y", min=0, max=1000, default=500, decimals=0, callback=function(v) State.TriggerBot.FOV2DY=v end},
+    {type="slider", text="2D Prediction", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.TriggerBot.FOV2DPrediction=v end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 4: FOV
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("FOV", {
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.FOV.Enabled=v end},
+    {type="toggle", text="Visible", default=false, callback=function(v) State.FOV.Visible=v end},
+    {type="slider", text="Scan Range", min=0, max=500, default=250, decimals=0, callback=function(v) State.FOV.ScanRange=v end},
+    {type="dropdown", text="Ignore Modes", options={"None","Knocked","Grabbed","Both"}, default="None", callback=function(v) State.FOV.IgnoreModes=v end},
+    {type="dropdown", text="Type", options={"Circle","Box","3D"}, default="Circle", callback=function(v) State.FOV.Type=v end},
+    {type="slider", text="Circle Radius", min=0, max=500, default=250, decimals=0, callback=function(v) State.FOV.CircleRadius=v end},
+    {type="slider", text="Box Dimensions", min=0, max=500, default=250, decimals=0, callback=function(v) State.FOV.BoxDimensions=v end},
+    {type="dropdown", text="Mode", options={"Center","Mouse"}, default="Center", callback=function(v) State.FOV.Mode=v end},
+    {type="toggle", text="Mode Visible", default=false, callback=function(v) State.FOV.ModeVisible=v end},
+    {type="header", text="2D"},
+    {type="slider", text="X", min=0, max=1000, default=500, decimals=0, callback=function(v) State.FOV.X2D=v end},
+    {type="slider", text="Y", min=0, max=1000, default=500, decimals=0, callback=function(v) State.FOV.Y2D=v end},
+    {type="header", text="3D"},
+    {type="slider", text="X", min=0, max=1000, default=500, decimals=0, callback=function(v) State.FOV.X3D=v end},
+    {type="slider", text="Y", min=0, max=1000, default=500, decimals=0, callback=function(v) State.FOV.Y3D=v end},
+    {type="slider", text="Z", min=0, max=1000, default=500, decimals=0, callback=function(v) State.FOV.Z3D=v end},
+    {type="slider", text="Prediction", min=0, max=0.5, default=0.165, decimals=3, callback=function(v) State.FOV.Prediction3D=v end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 5: HITBOX + RAGE
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Hitbox", {
+    {type="header", text="HITBOX EXPANDER"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.Hitbox.Enabled=v; UpdateFeatureStatus("hitbox-expander",v) end},
+    {type="slider", text="Size", min=1, max=20, default=5, decimals=0, callback=function(v) State.Hitbox.Size=v end},
+    {type="toggle", text="Target Mode Only", default=false, callback=function(v) State.Hitbox.TargetModeOnly=v end},
+    {type="dropdown", text="Transparency", options={"0.1","0.2","0.3","0.4","0.5","0.6","0.7","0.8","0.9","1.0"}, default="0.5", callback=function(v) State.Hitbox.Transparency=tonumber(v) end},
+    {type="toggle", text="Visualize Hitbox", default=false, callback=function(v) State.Hitbox.Visualize=v end},
+    {type="header", text="RAGE MODE"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.Rage.Enabled=v; UpdateFeatureStatus("rage-mode",v) end},
+    {type="dropdown", text="Mode", options={"Legit","Rage","Semi-Rage"}, default="Legit", callback=function(v) State.Rage.Mode=v end},
+    {type="toggle", text="Full Damage", default=false, callback=function(v) State.Rage.FullDamage=v end},
+    {type="header", text="Weapon Distances"},
+    {type="slider", text="Double-Barrel", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Double-Barrel"]=v end},
+    {type="slider", text="Tactical Shotgun", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Tactical Shotgun"]=v end},
+    {type="slider", text="Revolver", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Revolver"]=v end},
+    {type="slider", text="Silencer", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Silencer"]=v end},
+    {type="slider", text="Glock", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Glock"]=v end},
+    {type="slider", text="AR", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["AR"]=v end},
+    {type="slider", text="Silencer AR", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Silencer AR"]=v end},
+    {type="slider", text="AK47", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["AK47"]=v end},
+    {type="slider", text="LMG", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["LMG"]=v end},
+    {type="slider", text="Drum Gun", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Drum Gun"]=v end},
+    {type="slider", text="AUG", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["AUG"]=v end},
+    {type="slider", text="SMG", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["SMG"]=v end},
+    {type="slider", text="P90", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["P90"]=v end},
+    {type="slider", text="Rifle", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Rifle"]=v end},
+    {type="slider", text="Shotgun", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Shotgun"]=v end},
+    {type="slider", text="Drum Shotgun", min=0, max=100, default=50, decimals=0, callback=function(v) State.Rage.WeaponDistances["Drum Shotgun"]=v end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 6: MISC
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Misc", {
+    {type="header", text="PLAYER MODIFICATIONS"},
+    {type="toggle", text="Anti Fall", default=false, callback=function(v) State.PlayerMods.AntiFall=v; UpdateFeatureStatus("anti-fall",v) end},
+    {type="header", text="Speed"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.PlayerMods.SpeedEnabled=v; UpdateFeatureStatus("speed-walk",v) end},
+    {type="slider", text="Default", min=0, max=100, default=16, decimals=0, callback=function(v) State.PlayerMods.SpeedDefault=v end},
+    {type="slider", text="Low Health", min=0, max=100, default=20, decimals=0, callback=function(v) State.PlayerMods.SpeedLowHealth=v end},
+    {type="slider", text="Reloading", min=0, max=100, default=10, decimals=0, callback=function(v) State.PlayerMods.SpeedReloading=v end},
+    {type="header", text="Jump Power"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.PlayerMods.JumpPowerEnabled=v; UpdateFeatureStatus("jumppower",v) end},
+    {type="slider", text="Value", min=0, max=200, default=50, decimals=0, callback=function(v) State.PlayerMods.JumpPowerValue=v end},
+    {type="toggle", text="Anti Jump Cooldown", default=false, callback=function(v) State.PlayerMods.AntiJumpCooldown=v end},
+    {type="header", text="WEAPON MODIFICATIONS"},
+    {type="toggle", text="Spread Changer", default=false, callback=function(v) State.PlayerMods.SpreadChangerEnabled=v end},
+    {type="toggle", text="Double Tap", default=false, callback=function(v) State.PlayerMods.DoubleTapEnabled=v end},
+    {type="toggle", text="Delay Changer", default=false, callback=function(v) State.PlayerMods.DelayChangerEnabled=v end},
+    {type="header", text="SKIN CHANGER"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.PlayerMods.SkinChangerEnabled=v; UpdateFeatureStatus("skin-changer",v) end},
+    {type="toggle", text="Unlock All", default=false, callback=function(v) State.PlayerMods.SkinUnlockAll=v end},
+    {type="toggle", text="Hood Customs", default=false, callback=function(v) State.PlayerMods.SkinHoodCustoms=v end},
+    {type="toggle", text="Dee Hood", default=false, callback=function(v) State.PlayerMods.SkinDeeHood=v end},
+    {type="header", text="MISC MOVEMENT"},
+    {type="toggle", text="Speed Hack", default=false, callback=function(v) State.Misc.SpeedHack=v; UpdateFeatureStatus("speed-walk",v) end},
+    {type="toggle", text="NoClip", default=false, callback=function(v) State.Misc.NoClip=v; UpdateFeatureStatus("noclip",v) end},
+    {type="slider", text="NoClip Speed", min=0, max=100, default=0, decimals=0, callback=function(v) State.Misc.NoClipSpeed=v end},
+    {type="toggle", text="Flight", default=false, callback=function(v) State.Misc.Flight=v; UpdateFeatureStatus("flight",v) end},
+    {type="slider", text="Flight Speed", min=0, max=100, default=0, decimals=0, callback=function(v) State.Misc.FlightSpeed=v end},
+    {type="dropdown", text="Flight Mode", options={"Camera","BodyVelocity","BodyGyro"}, default="Camera", callback=function(v) State.Misc.FlightMode=v end},
+    {type="toggle", text="Teleport To Player", default=false, callback=function(v) State.Misc.TeleportToPlayer=v end},
+    {type="header", text="GAME UTILITIES"},
+    {type="toggle", text="Inventory Sorter", default=false, callback=function(v) State.GameUtils.InventorySorterEnabled=v; UpdateFeatureStatus("inventory-sorter",v) end},
+    {type="dropdown", text="Sort Order", options={"Name","Type","Rarity"}, default="Name", callback=function(v) State.GameUtils.InventorySorterOrder=v end},
+    {type="toggle", text="Armor Aura", default=false, callback=function(v) State.GameUtils.ArmorAuraEnabled=v; UpdateFeatureStatus("armor-aura",v) end},
+    {type="slider", text="Aura Distance", min=0, max=50, default=10, decimals=0, callback=function(v) State.GameUtils.ArmorAuraDistance=v end},
+    {type="header", text="HOTKEYS"},
+    {type="toggle", text="Show Hotkeys", default=false, callback=function(v) State.ShowHotkeys.Enabled=v end},
+    {type="color", text="Ecco Color", default=Colors.Accent, callback=function(v) State.ShowHotkeys.EccoColor=v end},
+    {type="keybind", text="AimBot Target", default=Enum.KeyCode.E, callback=function(v) State.Keybinds.AimBotTarget=v end},
+    {type="keybind", text="TriggerBot", default=Enum.KeyCode.T, callback=function(v) State.Keybinds.TriggerBot=v end},
+    {type="keybind", text="TriggerBot Target", default=Enum.KeyCode.Y, callback=function(v) State.Keybinds.TriggerBotTarget=v end},
+    {type="keybind", text="Silent Aim Target", default=Enum.KeyCode.Q, callback=function(v) State.Keybinds.SilentAimTarget=v end},
+    {type="keybind", text="Inventory Sorter", default=Enum.KeyCode.R, callback=function(v) State.Keybinds.InventorySorter=v end},
+    {type="keybind", text="WalkSpeed", default=Enum.KeyCode.LeftShift, callback=function(v) State.Keybinds.WalkSpeed=v end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 7: VISUAL
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Visual", {
+    {type="header", text="ESP SETTINGS"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.ESP.Enabled=v; UpdateFeatureStatus("esp",v) end},
+    {type="toggle", text="Names", default=false, callback=function(v) State.ESP.Names=v end},
+    {type="color", text="Name Color", default=Colors.White, callback=function(v) State.ESP.NameColor=v end},
+    {type="color", text="Targeting Color", default=Colors.Accent, callback=function(v) State.ESP.TargetingColor=v end},
+    {type="header", text="VISUAL ESP"},
+    {type="toggle", text="Box ESP", default=false, callback=function(v) State.Visual.ESPBox=v; UpdateFeatureStatus("esp-box",v) end},
+    {type="dropdown", text="Box Type", options={"2D","3D","Corner"}, default="2D", callback=function(v) State.Visual.ESPType=v end},
+    {type="toggle", text="Filled", default=false, callback=function(v) State.Visual.ESPFilled=v end},
+    {type="toggle", text="Distance", default=false, callback=function(v) State.Visual.ESPDistance=v end},
+    {type="toggle", text="Name", default=false, callback=function(v) State.Visual.ESPName=v end},
+    {type="toggle", text="Health", default=false, callback=function(v) State.Visual.ESPHealth=v end},
+    {type="toggle", text="Snap Line", default=false, callback=function(v) State.Visual.ESPSnapLine=v end},
+    {type="toggle", text="Bone", default=false, callback=function(v) State.Visual.ESPBone=v end},
+    {type="toggle", text="Limit Distance", default=false, callback=function(v) State.Visual.LimitDistance=v end},
+    {type="slider", text="Limit Value", min=0, max=2000, default=0, decimals=0, callback=function(v) State.Visual.LimitDistanceValue=v end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 8: WHITELIST
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Whitelist", {
+    {type="header", text="WHITELIST SETTINGS"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.Whitelist.Enabled=v; UpdateFeatureStatus("whitelist",v) end},
+    {type="toggle", text="Friends Only", default=false, callback=function(v) State.Whitelist.FriendsOnly=v end},
+    {type="toggle", text="Crew Only", default=false, callback=function(v) State.Whitelist.CrewOnly=v end},
+    {type="header", text="ADD PLAYER"},
+    {type="input", text="Player Name", default="", callback=function(v)
+        if v and v ~= "" then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr.Name:lower():find(v:lower()) or plr.DisplayName:lower():find(v:lower()) then
+                    table.insert(State.Whitelist.Players, plr.Name)
+                    break
+                end
+            end
+        end
+    end},
+    {type="button", text="Clear Whitelist", callback=function()
+        State.Whitelist.Players = {}
+    end},
+    {type="button", text="Add All Friends", callback=function()
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr:IsFriendsWith(LocalPlayer.UserId) then
+                table.insert(State.Whitelist.Players, plr.Name)
+            end
+        end
+    end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 9: TELEPORT
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Teleport", {
+    {type="header", text="TELEPORT SETTINGS"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.Teleport.Enabled=v; UpdateFeatureStatus("teleport",v) end},
+    {type="toggle", text="Auto Teleport", default=false, callback=function(v) State.Teleport.AutoTeleport=v end},
+    {type="slider", text="Teleport Distance", min=0, max=50, default=5, decimals=0, callback=function(v) State.Teleport.TeleportDistance=v end},
+    {type="header", text="SELECT PLAYER"},
+    {type="input", text="Target Player", default="", callback=function(v)
+        if v and v ~= "" then
+            for _, plr in ipairs(Players:GetPlayers()) do
+                if plr.Name:lower():find(v:lower()) or plr.DisplayName:lower():find(v:lower()) then
+                    State.Teleport.SelectedPlayer = plr
+                    break
+                end
+            end
+        end
+    end},
+    {type="button", text="Teleport To Player", callback=function()
+        if State.Teleport.SelectedPlayer and State.Teleport.SelectedPlayer.Character then
+            local hrp = State.Teleport.SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp and myHrp then
+                myHrp.CFrame = hrp.CFrame * CFrame.new(0, 0, State.Teleport.TeleportDistance)
+            end
+        end
+    end},
+    {type="button", text="Teleport Behind", callback=function()
+        if State.Teleport.SelectedPlayer and State.Teleport.SelectedPlayer.Character then
+            local hrp = State.Teleport.SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp and myHrp then
+                myHrp.CFrame = hrp.CFrame * CFrame.new(0, 0, -State.Teleport.TeleportDistance)
+            end
+        end
+    end},
+    {type="header", text="LOCATIONS"},
+    {type="button", text="Teleport To Spawn", callback=function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            local spawnLoc = workspace:FindFirstChild("SpawnLocation")
+            if spawnLoc then
+                LocalPlayer.Character.HumanoidRootPart.CFrame = spawnLoc.CFrame + Vector3.new(0, 5, 0)
+            end
+        end
+    end},
+    {type="button", text="Teleport To Safe Zone", callback=function()
+        if LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart") then
+            LocalPlayer.Character.HumanoidRootPart.CFrame = CFrame.new(0, 100, 0)
+        end
+    end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 10: ANTI DETECTION
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("AntiDet", {
+    {type="header", text="ANTI DETECTION"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) State.AntiDetection.Enabled=v; UpdateFeatureStatus("anti-detection",v) end},
+    {type="toggle", text="Anti Screenshot", default=false, callback=function(v) State.AntiDetection.AntiScreenshot=v end},
+    {type="toggle", text="Anti Record", default=false, callback=function(v) State.AntiDetection.AntiRecord=v end},
+    {type="toggle", text="Anti Kick", default=false, callback=function(v) State.AntiDetection.AntiKick=v end},
+    {type="toggle", text="Anti Teleport", default=false, callback=function(v) State.AntiDetection.AntiTeleport=v end},
+    {type="header", text="NAME SPOOFING"},
+    {type="toggle", text="Spoof Name", default=false, callback=function(v) State.AntiDetection.SpoofName=v end},
+    {type="toggle", text="Spoof Display Name", default=false, callback=function(v) State.AntiDetection.SpoofDisplayName=v end},
+    {type="input", text="Fake Name", default="Player", callback=function(v) State.AntiDetection.FakeName=v end},
+    {type="input", text="Fake Display Name", default="Player", callback=function(v) State.AntiDetection.FakeDisplayName=v end},
+    {type="toggle", text="Hide From Player List", default=false, callback=function(v) State.AntiDetection.HideFromPlayerList=v end},
+    {type="header", text="POSITION SPOOFING"},
+    {type="toggle", text="Spoof Position", default=false, callback=function(v) State.AntiDetection.SpoofPosition=v end},
+    {type="slider", text="Position Offset", min=0, max=1000, default=0, decimals=0, callback=function(v) State.AntiDetection.PositionOffset=v end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 11: FAKE USER
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("FakeUser", {
+    {type="header", text="FAKE USER SETTINGS"},
+    {type="toggle", text="Enabled", default=false, callback=function(v) 
+        State.FakeUser.Enabled=v
+        if v then
+            State.FakeUser.OriginalName = LocalPlayer.Name
+            State.FakeUser.OriginalDisplayName = LocalPlayer.DisplayName
+        end
+        UpdateFeatureStatus("fake-user",v) 
+    end},
+    {type="input", text="Fake Username", default="Player123", callback=function(v) State.FakeUser.FakeUsername=v end},
+    {type="input", text="Fake Display Name", default="Player", callback=function(v) State.FakeUser.FakeDisplayName=v end},
+    {type="toggle", text="Spoof In Leaderboard", default=false, callback=function(v) State.FakeUser.SpoofInLeaderboard=v end},
+    {type="toggle", text="Spoof In Chat", default=false, callback=function(v) State.FakeUser.SpoofInChat=v end},
+    {type="toggle", text="Spoof In Game", default=false, callback=function(v) State.FakeUser.SpoofInGame=v end},
+    {type="button", text="Apply Fake User", callback=function()
+        if State.FakeUser.Enabled then
+            pcall(function()
+                if State.FakeUser.SpoofInGame then
+                    LocalPlayer.Name = State.FakeUser.FakeUsername
+                    LocalPlayer.DisplayName = State.FakeUser.FakeDisplayName
+                end
+            end)
+        end
+    end},
+    {type="button", text="Reset To Original", callback=function()
+        pcall(function()
+            if State.FakeUser.OriginalName ~= "" then
+                LocalPlayer.Name = State.FakeUser.OriginalName
+                LocalPlayer.DisplayName = State.FakeUser.OriginalDisplayName
+            end
+        end)
+    end},
+})
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TAB 12: SETTINGS
+-- ═══════════════════════════════════════════════════════════════════════════════
+BuildTab("Settings", {
+    {type="header", text="UI SETTINGS"},
+    {type="keybind", text="UI Toggle Key", default=Enum.KeyCode.RightShift, callback=function(v) State.Settings.UIKeybind=v end},
+    {type="dropdown", text="Theme", options={"Purple","Red","Blue","Green","Orange","Pink"}, default="Purple", callback=function(v) State.Settings.Theme=v end},
+    {type="header", text="CONFIGURATION"},
+    {type="button", text="Save Config", callback=function()
+        pcall(function()
+            local config = HttpService:JSONEncode(State)
+            if Executor.HasSetClipboard then
+                setclipboard(config)
+            end
+        end)
+    end},
+    {type="button", text="Load Config", callback=function()
+        pcall(function()
+            if Executor.HasSetClipboard then
+                -- Config would be loaded from clipboard
+            end
+        end)
+    end},
+    {type="button", text="Reset All", callback=function()
+        for k, v in pairs(State) do
+            if type(v) == "table" then
+                for k2, v2 in pairs(v) do
+                    if type(v2) == "boolean" then
+                        v[k2] = false
+                    elseif type(v2) == "number" then
+                        v[k2] = 0
+                    end
+                end
+            end
+        end
+    end},
+    {type="header", text="INFORMATION"},
+    {type="button", text="Copy Discord", callback=function()
+        pcall(function()
+            if Executor.HasSetClipboard then
+                setclipboard("discord.gg/etchmohub")
+            end
+        end)
+    end},
+    {type="button", text="Rejoin Server", callback=function()
+        pcall(function()
+            local ts = game:GetService("TeleportService")
+            ts:Teleport(game.PlaceId, LocalPlayer)
+        end)
+    end},
+})
+
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  DRAGGING SYSTEM
+-- ═══════════════════════════════════════════════════════════════════════════════
+local dragging = false
+local dragInput = nil
+local dragStart = nil
+local startPos = nil
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if dragging and (input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch) then
+        local delta = input.Position - dragStart
+        pcall(function()
+            MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+            Shadow.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X - 10, startPos.Y.Scale, startPos.Y.Offset + delta.Y - 10)
+        end)
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = false
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  UI TOGGLE KEYBIND
+-- ═══════════════════════════════════════════════════════════════════════════════
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == State.Settings.UIKeybind then
+        MainFrame.Visible = not MainFrame.Visible
+        Shadow.Visible = MainFrame.Visible
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  UTILITY FUNCTIONS FOR FEATURES
+-- ═══════════════════════════════════════════════════════════════════════════════
+local function GetClosestPlayer(maxDistance, hitPart)
+    local closest = nil
+    local closestDist = maxDistance or math.huge
+    local myChar = LocalPlayer.Character
+    if not myChar then return nil end
+    local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+    if not myHrp then return nil end
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local hrp = plr.Character:FindFirstChild(hitPart or "HumanoidRootPart")
+            if hrp then
+                local dist = (hrp.Position - myHrp.Position).Magnitude
+                if dist < closestDist then
+                    closestDist = dist
+                    closest = plr
+                end
+            end
+        end
+    end
+    return closest
+end
+
+local function IsPlayerValidTarget(plr)
+    if not plr or not plr.Character then return false end
+    if plr == LocalPlayer then return false end
+
+    if State.Whitelist.Enabled then
+        local isWhitelisted = false
+        for _, name in ipairs(State.Whitelist.Players) do
+            if plr.Name == name then
+                isWhitelisted = true
+                break
+            end
+        end
+        if State.Whitelist.FriendsOnly and not plr:IsFriendsWith(LocalPlayer.UserId) then
+            return false
+        end
+        if not isWhitelisted and #State.Whitelist.Players > 0 then
+            return false
+        end
+    end
+
+    if State.Checks.Visible then
+        local myChar = LocalPlayer.Character
+        if myChar then
+            local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+            local targetHrp = plr.Character:FindFirstChild("HumanoidRootPart")
+            if myHrp and targetHrp then
+                local ray = Ray.new(myHrp.Position, (targetHrp.Position - myHrp.Position).Unit * (targetHrp.Position - myHrp.Position).Magnitude)
+                local hit = workspace:FindPartOnRayWithIgnoreList(ray, {myChar, plr.Character})
+                if hit then return false end
+            end
+        end
+    end
+
+    return true
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  SILENT AIM LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+local SilentAimTarget = nil
+
+RunService.RenderStepped:Connect(function()
+    if State.SilentAim.Enabled then
+        SilentAimTarget = GetClosestPlayer(State.SilentAim.Distance, State.SilentAim.HitPart)
+    else
+        SilentAimTarget = nil
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  AIMBOT LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+local AimbotTarget = nil
+local AimbotActive = false
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == State.Keybinds.AimBotTarget then
+        AimbotActive = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == State.Keybinds.AimBotTarget then
+        AimbotActive = false
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if State.Aimbot.Enabled and AimbotActive then
+        local target = GetClosestPlayer(State.Aimbot.Distance, State.Aimbot.HitPart)
+        if target and target.Character then
+            local targetPart = target.Character:FindFirstChild(State.Aimbot.HitPart or "Head")
+            if targetPart then
+                local targetPos = targetPart.Position
+                local camera = workspace.CurrentCamera
+                local currentCFrame = camera.CFrame
+                local targetCFrame = CFrame.new(currentCFrame.Position, targetPos)
+                camera.CFrame = currentCFrame:Lerp(targetCFrame, State.Aimbot.Smoothness)
+            end
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TRIGGER BOT LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+local TriggerBotActive = false
+local lastTrigger = 0
+
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if not gameProcessed and input.KeyCode == State.Keybinds.TriggerBot then
+        TriggerBotActive = true
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input)
+    if input.KeyCode == State.Keybinds.TriggerBot then
+        TriggerBotActive = false
+    end
+end)
+
+RunService.RenderStepped:Connect(function()
+    if State.TriggerBot.Enabled then
+        local shouldTrigger = false
+        if State.TriggerBot.ActivationMode == "Always" then
+            shouldTrigger = true
+        elseif State.TriggerBot.ActivationMode == "Hold" and TriggerBotActive then
+            shouldTrigger = true
+        elseif State.TriggerBot.ActivationMode == "Toggle" and TriggerBotActive then
+            shouldTrigger = true
+        end
+
+        if shouldTrigger and tick() - lastTrigger > State.TriggerBot.Cooldown then
+            local target = GetClosestPlayer(State.TriggerBot.Distance, "HumanoidRootPart")
+            if target and IsPlayerValidTarget(target) then
+                pcall(function()
+                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, true, game, 0)
+                    task.wait(0.01)
+                    VirtualInputManager:SendMouseButtonEvent(0, 0, 0, false, game, 0)
+                end)
+                lastTrigger = tick()
+            end
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  SPEED HACK LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+RunService.RenderStepped:Connect(function()
+    if State.Misc.SpeedHack or State.PlayerMods.SpeedEnabled then
+        local char = LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                if State.PlayerMods.SpeedEnabled then
+                    humanoid.WalkSpeed = State.PlayerMods.SpeedDefault
+                elseif State.Misc.SpeedHack then
+                    humanoid.WalkSpeed = 50
+                end
+            end
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  JUMP POWER LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+RunService.RenderStepped:Connect(function()
+    if State.PlayerMods.JumpPowerEnabled then
+        local char = LocalPlayer.Character
+        if char then
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+            if humanoid then
+                humanoid.JumpPower = State.PlayerMods.JumpPowerValue
+            end
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  NOCLIP LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+RunService.Stepped:Connect(function()
+    if State.Misc.NoClip then
+        local char = LocalPlayer.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  FLIGHT LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+local FlightConnection = nil
+
+local function StartFlight()
+    if FlightConnection then return end
+    FlightConnection = RunService.RenderStepped:Connect(function()
+        if not State.Misc.Flight then return end
+        local char = LocalPlayer.Character
+        if not char then return end
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if not hrp then return end
+
+        local speed = State.Misc.FlightSpeed > 0 and State.Misc.FlightSpeed or 50
+        local camera = workspace.CurrentCamera
+        local moveDir = Vector3.new(0, 0, 0)
+
+        if UserInputService:IsKeyDown(Enum.KeyCode.W) then
+            moveDir = moveDir + camera.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.S) then
+            moveDir = moveDir - camera.CFrame.LookVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.A) then
+            moveDir = moveDir - camera.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.D) then
+            moveDir = moveDir + camera.CFrame.RightVector
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.Space) then
+            moveDir = moveDir + Vector3.new(0, 1, 0)
+        end
+        if UserInputService:IsKeyDown(Enum.KeyCode.LeftShift) then
+            moveDir = moveDir - Vector3.new(0, 1, 0)
+        end
+
+        if moveDir.Magnitude > 0 then
+            moveDir = moveDir.Unit * speed * 0.1
+            hrp.Velocity = moveDir
+            hrp.CFrame = hrp.CFrame + moveDir
+        end
+    end)
+end
+
+local function StopFlight()
+    if FlightConnection then
+        FlightConnection:Disconnect()
+        FlightConnection = nil
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if State.Misc.Flight and not FlightConnection then
+        StartFlight()
+    elseif not State.Misc.Flight and FlightConnection then
+        StopFlight()
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  ANTI FALL LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+RunService.RenderStepped:Connect(function()
+    if State.PlayerMods.AntiFall then
+        local char = LocalPlayer.Character
+        if char then
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            if hrp and hrp.Position.Y < -50 then
+                hrp.CFrame = CFrame.new(hrp.Position.X, 50, hrp.Position.Z)
+            end
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  HITBOX EXPANDER LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+local OriginalHitboxes = {}
+
+RunService.RenderStepped:Connect(function()
+    if State.Hitbox.Enabled then
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    if not OriginalHitboxes[plr] then
+                        OriginalHitboxes[plr] = hrp.Size
+                    end
+                    hrp.Size = Vector3.new(State.Hitbox.Size, State.Hitbox.Size, State.Hitbox.Size)
+                    hrp.Transparency = State.Hitbox.Visualize and State.Hitbox.Transparency or 1
+                end
+            end
+        end
+    else
+        for plr, originalSize in pairs(OriginalHitboxes) do
+            if plr.Character then
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.Size = originalSize
+                    hrp.Transparency = 1
+                end
+            end
+        end
+        OriginalHitboxes = {}
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  ESP LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+local ESPObjects = {}
+
+local function CreateESPForPlayer(plr)
+    if ESPObjects[plr] then return end
+
+    local espData = {
+        Box = nil,
+        Name = nil,
+        Health = nil,
+        Distance = nil,
+        SnapLine = nil,
+    }
+
+    if Executor.HasDrawing then
+        espData.Box = Drawing.new("Square")
+        espData.Box.Visible = false
+        espData.Box.Thickness = 1
+        espData.Box.Color = Colors.Accent
+        espData.Box.Filled = false
+
+        espData.Name = Drawing.new("Text")
+        espData.Name.Visible = false
+        espData.Name.Size = 13
+        espData.Name.Color = Colors.White
+        espData.Name.Center = true
+        espData.Name.Outline = true
+
+        espData.Health = Drawing.new("Text")
+        espData.Health.Visible = false
+        espData.Health.Size = 11
+        espData.Health.Color = Colors.Green
+        espData.Health.Center = true
+        espData.Health.Outline = true
+
+        espData.Distance = Drawing.new("Text")
+        espData.Distance.Visible = false
+        espData.Distance.Size = 11
+        espData.Distance.Color = Colors.Yellow
+        espData.Distance.Center = true
+        espData.Distance.Outline = true
+
+        espData.SnapLine = Drawing.new("Line")
+        espData.SnapLine.Visible = false
+        espData.SnapLine.Thickness = 1
+        espData.SnapLine.Color = Colors.Accent
+    end
+
+    ESPObjects[plr] = espData
+end
+
+local function RemoveESPForPlayer(plr)
+    if ESPObjects[plr] then
+        if Executor.HasDrawing then
+            for _, obj in pairs(ESPObjects[plr]) do
+                if obj and obj.Remove then
+                    obj:Remove()
+                end
+            end
+        end
+        ESPObjects[plr] = nil
+    end
+end
+
+RunService.RenderStepped:Connect(function()
+    if not State.ESP.Enabled and not State.Visual.ESPBox then
+        for plr, _ in pairs(ESPObjects) do
+            RemoveESPForPlayer(plr)
+        end
+        return
+    end
+
+    local camera = workspace.CurrentCamera
+    local myChar = LocalPlayer.Character
+    local myHrp = myChar and myChar:FindFirstChild("HumanoidRootPart")
+
+    for _, plr in ipairs(Players:GetPlayers()) do
+        if plr ~= LocalPlayer and plr.Character then
+            local char = plr.Character
+            local hrp = char:FindFirstChild("HumanoidRootPart")
+            local head = char:FindFirstChild("Head")
+            local humanoid = char:FindFirstChildOfClass("Humanoid")
+
+            if hrp and head and Executor.HasDrawing then
+                CreateESPForPlayer(plr)
+                local espData = ESPObjects[plr]
+
+                local pos, onScreen = camera:WorldToViewportPoint(hrp.Position)
+                local headPos = camera:WorldToViewportPoint(head.Position + Vector3.new(0, 0.5, 0))
+                local legPos = camera:WorldToViewportPoint(hrp.Position - Vector3.new(0, 3, 0))
+
+                local dist = myHrp and (hrp.Position - myHrp.Position).Magnitude or 0
+
+                if State.Visual.LimitDistance and dist > State.Visual.LimitDistanceValue then
+                    onScreen = false
+                end
+
+                if onScreen then
+                    local boxHeight = math.abs(headPos.Y - legPos.Y)
+                    local boxWidth = boxHeight * 0.6
+
+                    if State.Visual.ESPBox then
+                        espData.Box.Visible = true
+                        espData.Box.Size = Vector2.new(boxWidth, boxHeight)
+                        espData.Box.Position = Vector2.new(pos.X - boxWidth / 2, pos.Y - boxHeight / 2)
+                        espData.Box.Filled = State.Visual.ESPFilled
+                        espData.Box.Transparency = State.Visual.ESPFilled and 0.3 or 1
+                    else
+                        espData.Box.Visible = false
+                    end
+
+                    if State.Visual.ESPName or State.ESP.Names then
+                        espData.Name.Visible = true
+                        espData.Name.Position = Vector2.new(pos.X, headPos.Y - 15)
+                        espData.Name.Text = plr.DisplayName ~= plr.Name and plr.DisplayName .. " [" .. plr.Name .. "]" or plr.Name
+                        espData.Name.Color = State.ESP.Names and State.ESP.NameColor or Colors.White
+                    else
+                        espData.Name.Visible = false
+                    end
+
+                    if State.Visual.ESPHealth and humanoid then
+                        espData.Health.Visible = true
+                        espData.Health.Position = Vector2.new(pos.X, pos.Y + boxHeight / 2 + 5)
+                        espData.Health.Text = math.floor(humanoid.Health) .. "/" .. math.floor(humanoid.MaxHealth)
+                    else
+                        espData.Health.Visible = false
+                    end
+
+                    if State.Visual.ESPDistance then
+                        espData.Distance.Visible = true
+                        espData.Distance.Position = Vector2.new(pos.X, pos.Y + boxHeight / 2 + 18)
+                        espData.Distance.Text = math.floor(dist) .. " studs"
+                    else
+                        espData.Distance.Visible = false
+                    end
+
+                    if State.Visual.ESPSnapLine then
+                        espData.SnapLine.Visible = true
+                        espData.SnapLine.From = Vector2.new(camera.ViewportSize.X / 2, camera.ViewportSize.Y)
+                        espData.SnapLine.To = Vector2.new(pos.X, pos.Y)
+                    else
+                        espData.SnapLine.Visible = false
+                    end
+                else
+                    for _, obj in pairs(espData) do
+                        obj.Visible = false
+                    end
+                end
+            end
+        end
+    end
+end)
+
+Players.PlayerRemoving:Connect(function(plr)
+    RemoveESPForPlayer(plr)
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  FOV CIRCLE DRAWING
+-- ═══════════════════════════════════════════════════════════════════════════════
+local FOVCircle = nil
+if Executor.HasDrawing then
+    FOVCircle = Drawing.new("Circle")
+    FOVCircle.Visible = false
+    FOVCircle.Thickness = 1
+    FOVCircle.Color = Colors.Accent
+    FOVCircle.NumSides = 64
+    FOVCircle.Filled = false
+end
+
+RunService.RenderStepped:Connect(function()
+    if State.FOV.Enabled and State.FOV.Visible and FOVCircle then
+        FOVCircle.Visible = true
+        FOVCircle.Radius = State.FOV.CircleRadius
+        FOVCircle.Position = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+        FOVCircle.Color = Colors.Accent
+    elseif FOVCircle then
+        FOVCircle.Visible = false
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  ANTI DETECTION LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+if State.AntiDetection.AntiKick then
+    pcall(function()
+        local mt = getrawmetatable(game)
+        local oldNamecall = mt.__namecall
+        setreadonly(mt, false)
+        mt.__namecall = newcclosure(function(self, ...)
+            local method = getnamecallmethod()
+            if method == "Kick" or method == "kick" then
+                return nil
+            end
+            return oldNamecall(self, ...)
+        end)
+        setreadonly(mt, true)
+    end)
+end
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TELEPORT AUTO-TRACKING
+-- ═══════════════════════════════════════════════════════════════════════════════
+RunService.RenderStepped:Connect(function()
+    if State.Teleport.Enabled and State.Teleport.AutoTeleport and State.Teleport.SelectedPlayer then
+        if State.Teleport.SelectedPlayer.Character then
+            local hrp = State.Teleport.SelectedPlayer.Character:FindFirstChild("HumanoidRootPart")
+            local myHrp = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
+            if hrp and myHrp then
+                myHrp.CFrame = hrp.CFrame * CFrame.new(0, 0, State.Teleport.TeleportDistance)
+            end
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  ARMOR AURA LOGIC
+-- ═══════════════════════════════════════════════════════════════════════════════
+RunService.RenderStepped:Connect(function()
+    if State.GameUtils.ArmorAuraEnabled then
+        local myChar = LocalPlayer.Character
+        if not myChar then return end
+        local myHrp = myChar:FindFirstChild("HumanoidRootPart")
+        if not myHrp then return end
+
+        for _, plr in ipairs(Players:GetPlayers()) do
+            if plr ~= LocalPlayer and plr.Character then
+                local hrp = plr.Character:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    local dist = (hrp.Position - myHrp.Position).Magnitude
+                    if dist <= State.GameUtils.ArmorAuraDistance then
+                        -- Armor aura logic would go here
+                        -- This is game-specific
+                    end
+                end
+            end
+        end
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  TARGET LINE DRAWING
+-- ═══════════════════════════════════════════════════════════════════════════════
+local TargetLine = nil
+if Executor.HasDrawing then
+    TargetLine = Drawing.new("Line")
+    TargetLine.Visible = false
+    TargetLine.Thickness = 1
+end
+
+RunService.RenderStepped:Connect(function()
+    if State.SilentAim.TargetLineEnabled and SilentAimTarget and SilentAimTarget.Character then
+        local hrp = SilentAimTarget.Character:FindFirstChild("HumanoidRootPart")
+        if hrp and TargetLine then
+            local pos = workspace.CurrentCamera:WorldToViewportPoint(hrp.Position)
+            TargetLine.Visible = true
+            TargetLine.From = Vector2.new(workspace.CurrentCamera.ViewportSize.X / 2, workspace.CurrentCamera.ViewportSize.Y / 2)
+            TargetLine.To = Vector2.new(pos.X, pos.Y)
+            TargetLine.Color = State.SilentAim.TargetLineInFOVColor
+        end
+    elseif TargetLine then
+        TargetLine.Visible = false
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  HOTKEYS DISPLAY
+-- ═══════════════════════════════════════════════════════════════════════════════
+local HotkeysFrame = nil
+
+local function UpdateHotkeysDisplay()
+    if State.ShowHotkeys.Enabled then
+        if not HotkeysFrame then
+            HotkeysFrame = CreateInstance("Frame", {
+                Name = "HotkeysFrame",
+                Parent = ScreenGui,
+                BackgroundColor3 = Colors.SecondaryBg,
+                BorderSizePixel = 0,
+                Position = UDim2.new(0, 10, 0.5, -100),
+                Size = UDim2.new(0, 150, 0, 200),
+                BackgroundTransparency = 0.2,
+            })
+            CreateInstance("UICorner", {CornerRadius = UDim.new(0, 6), Parent = HotkeysFrame})
+
+            CreateInstance("TextLabel", {
+                Name = "Title",
+                Parent = HotkeysFrame,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 24),
+                Font = Fonts.Tabs,
+                Text = "HOTKEYS",
+                TextColor3 = State.ShowHotkeys.EccoColor,
+                TextSize = 12,
+            })
+
+            local list = CreateInstance("Frame", {
+                Name = "List",
+                Parent = HotkeysFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 0, 0, 28),
+                Size = UDim2.new(1, 0, 1, -28),
+            })
+
+            local y = 0
+            local hotkeys = {
+                {k = State.Keybinds.AimBotTarget.Name, v = "Aimbot"},
+                {k = State.Keybinds.TriggerBot.Name, v = "TriggerBot"},
+                {k = State.Keybinds.SilentAimTarget.Name, v = "Silent Aim"},
+                {k = State.Keybinds.InventorySorter.Name, v = "Inv Sorter"},
+                {k = State.Keybinds.WalkSpeed.Name, v = "Speed"},
+            }
+
+            for _, hk in ipairs(hotkeys) do
+                CreateInstance("TextLabel", {
+                    Parent = list,
+                    BackgroundTransparency = 1,
+                    Position = UDim2.new(0, 8, 0, y),
+                    Size = UDim2.new(1, -16, 0, 18),
+                    Font = Fonts.Labels,
+                    Text = "[" .. hk.k .. "] " .. hk.v,
+                    TextColor3 = Colors.PrimaryText,
+                    TextSize = 10,
+                    TextXAlignment = Enum.TextXAlignment.Left,
+                })
+                y = y + 20
+            end
+        end
+        HotkeysFrame.Visible = true
+    elseif HotkeysFrame then
+        HotkeysFrame.Visible = false
+    end
+end
+
+RunService.RenderStepped:Connect(UpdateHotkeysDisplay)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  ACTIVE FEATURES DISPLAY
+-- ═══════════════════════════════════════════════════════════════════════════════
+local FeaturesFrame = nil
+
+RunService.RenderStepped:Connect(function()
+    local count = 0
+    for _ in pairs(ActiveFeatures) do count = count + 1 end
+
+    if count > 0 then
+        if not FeaturesFrame then
+            FeaturesFrame = CreateInstance("Frame", {
+                Name = "FeaturesFrame",
+                Parent = ScreenGui,
+                BackgroundColor3 = Colors.SecondaryBg,
+                BorderSizePixel = 0,
+                Position = UDim2.new(1, -160, 0, 10),
+                Size = UDim2.new(0, 150, 0, 0),
+                BackgroundTransparency = 0.2,
+            })
+            CreateInstance("UICorner", {CornerRadius = UDim.new(0, 6), Parent = FeaturesFrame})
+
+            CreateInstance("TextLabel", {
+                Name = "Title",
+                Parent = FeaturesFrame,
+                BackgroundTransparency = 1,
+                Size = UDim2.new(1, 0, 0, 24),
+                Font = Fonts.Tabs,
+                Text = "ACTIVE",
+                TextColor3 = Colors.Accent,
+                TextSize = 12,
+            })
+        end
+
+        -- Clear old labels
+        for _, child in ipairs(FeaturesFrame:GetChildren()) do
+            if child.Name ~= "Title" and child:IsA("TextLabel") then
+                child:Destroy()
+            end
+        end
+
+        local y = 28
+        for name, _ in pairs(ActiveFeatures) do
+            CreateInstance("TextLabel", {
+                Parent = FeaturesFrame,
+                BackgroundTransparency = 1,
+                Position = UDim2.new(0, 8, 0, y),
+                Size = UDim2.new(1, -16, 0, 18),
+                Font = Fonts.Labels,
+                Text = "  " .. name,
+                TextColor3 = Colors.Green,
+                TextSize = 10,
+                TextXAlignment = Enum.TextXAlignment.Left,
+            })
+            y = y + 18
+        end
+
+        FeaturesFrame.Size = UDim2.new(0, 150, 0, y + 5)
+        FeaturesFrame.Visible = true
+    elseif FeaturesFrame then
+        FeaturesFrame.Visible = false
+    end
+end)
+
+-- ═══════════════════════════════════════════════════════════════════════════════
+--  INITIALIZE
+-- ═══════════════════════════════════════════════════════════════════════════════
+SwitchTab("Silent")
+
+-- Notification
+pcall(function()
+    StarterGui:SetCore("SendNotification", {
+        Title = "ETCHMO.HUB v2.0",
+        Text = "Loaded successfully! | Executor: " .. Executor.Name,
+        Duration = 5,
+        Icon = "rbxassetid://10747373176"
+    })
+end)
+
+end)
+
+if not success then
+    warn("[ETCHMO.HUB] Error: " .. tostring(err))
+end
